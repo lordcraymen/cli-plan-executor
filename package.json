@@ -1,0 +1,28 @@
+{
+  "name": "@lordcraymen/cli-plan-executor",
+  "version": "1.0.0",
+  "description": "A Node.js package for simplifying the creation of CLI interfaces with TypeScript.",
+  "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest",
+    "start": "node dist/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lordcraymen/cli-plan-executor.git"
+  },
+  "keywords": [
+    "cli",
+    "typescript",
+    "builder",
+    "strategy"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^4.5.0",
+    "vitest": "^4.0.12"
+  }
+}
