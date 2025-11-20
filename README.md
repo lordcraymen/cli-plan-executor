@@ -1,5 +1,3 @@
-Here’s a fresh `README.md` that builds on the Executable / Action / Step / Plan idea, but keeps execution and CLI/wizard concerns clearly separated and uses classes + inheritance instead of factories.
-
 ````md
 # @lordcraymen/cli-plan-executor
 
