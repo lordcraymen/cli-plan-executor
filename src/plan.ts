@@ -1,15 +1,20 @@
+import { Action } from './action';
 import { ExecutionContext } from './execution-context';
 import { Executable } from './executable';
 
-export class Plan extends Executable<unknown[]> {
+export class Plan extends Action<void, unknown[]> {
   private readonly executables: Executable[] = [];
+
+  constructor(id: string) {
+    super(id, undefined);
+  }
 
   add(executable: Executable): this {
     this.executables.push(executable);
     return this;
   }
 
-  async execute(ctx: ExecutionContext): Promise<unknown[]> {
+  protected async run(_params: void, ctx: ExecutionContext): Promise<unknown[]> {
     const results: unknown[] = [];
     for (const executable of this.executables) {
       // eslint-disable-next-line no-await-in-loop
@@ -17,5 +22,9 @@ export class Plan extends Executable<unknown[]> {
       results.push(result);
     }
     return results;
+  }
+
+  describe(): string {
+    return `${this.id} [${this.executables.map(e => e.id).join(', ')}]`;
   }
 }

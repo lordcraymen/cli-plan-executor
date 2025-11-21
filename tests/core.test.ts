@@ -5,46 +5,41 @@ import {
   ExecutionContext,
   HandlerAction,
   Plan,
-  Step,
 } from '../src';
 
 describe('Action', () => {
   it('provides a default description', () => {
     class SampleAction extends Action<{ value: string }, string> {
-      async run(params: { value: string }): Promise<string> {
+      protected async run(params: { value: string }): Promise<string> {
         return params.value;
       }
     }
 
-    const action = new SampleAction('sample');
-    expect(action.describe({ value: 'abc' })).toBe('sample({"value":"abc"})');
+    const action = new SampleAction('sample', { value: 'abc' });
+    expect(action.describe()).toBe('sample({"value":"abc"})');
   });
-});
-
-describe('Step', () => {
-  const ctx: ExecutionContext = { cwd: process.cwd() };
 
   it('executes the action with provided params', async () => {
+    const ctx: ExecutionContext = { cwd: process.cwd() };
     const handler = vi.fn().mockResolvedValue('ok');
-    const action = new HandlerAction('handler', handler);
-    const step = new Step('step-1', action, { foo: 'bar' });
+    const action = new HandlerAction('handler', { foo: 'bar' }, handler);
 
-    const result = await step.execute(ctx);
+    const result = await action.execute(ctx);
 
     expect(handler).toHaveBeenCalledWith({ foo: 'bar' }, ctx);
     expect(result).toBe('ok');
   });
 
   it('logs description in dry-run mode', async () => {
+    const ctx: ExecutionContext = { cwd: process.cwd() };
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    const action = new HandlerAction('handler', async () => 'ok');
-    const step = new Step('step-2', action, { foo: 'bar' });
+    const action = new HandlerAction('handler', { foo: 'bar' }, async () => 'ok');
 
-    await step.execute({ ...ctx, dryRun: true });
+    await action.execute({ ...ctx, dryRun: true });
 
     expect(logSpy).toHaveBeenCalledWith(
-      '[dry-run][step:step-2] handler({"foo":"bar"})'
+      '[dry-run][action:handler] handler({"foo":"bar"})'
     );
 
     logSpy.mockRestore();
@@ -54,26 +49,18 @@ describe('Step', () => {
 describe('Plan', () => {
   const ctx: ExecutionContext = { cwd: process.cwd() };
 
-  it('executes contained executables sequentially', async () => {
+  it('executes contained actions sequentially', async () => {
     const order: string[] = [];
 
-    const first = new Step(
-      'first',
-      new HandlerAction('first-action', async () => {
-        order.push('first');
-        return 'first-result';
-      }),
-      {}
-    );
+    const first = new HandlerAction('first', {}, async () => {
+      order.push('first');
+      return 'first-result';
+    });
 
-    const second = new Step(
-      'second',
-      new HandlerAction('second-action', async () => {
-        order.push('second');
-        return 'second-result';
-      }),
-      {}
-    );
+    const second = new HandlerAction('second', {}, async () => {
+      order.push('second');
+      return 'second-result';
+    });
 
     const plan = new Plan('test-plan').add(first).add(second);
 
@@ -87,11 +74,11 @@ describe('Plan', () => {
 describe('CommandLineAction', () => {
   it('builds commands from params for description and execution', async () => {
     const builder = vi.fn((params: { command: string }) => params.command);
-    const action = new CommandLineAction<{ command: string }>('cmd', builder);
+    const action = new CommandLineAction<{ command: string }>('cmd', { command: 'echo "hello"' }, builder);
 
     const ctx: ExecutionContext = { cwd: process.cwd(), env: { TEST_ENV: '1' } };
 
-    const describeResult = action.describe({ command: 'echo "hello"' });
+    const describeResult = action.describe();
     expect(describeResult).toBe('echo "hello"');
 
     // Mock child_process.exec
@@ -101,9 +88,9 @@ describe('CommandLineAction', () => {
 
     vi.doMock('child_process', () => ({ exec: execMock }));
 
-    const { stdout, stderr } = await action.run({ command: 'echo hello' }, ctx);
+    const { stdout, stderr } = await action.execute(ctx);
 
-    expect(builder).toHaveBeenCalledWith({ command: 'echo hello' });
+    expect(builder).toHaveBeenCalledWith({ command: 'echo "hello"' });
     expect(execMock).toHaveBeenCalled();
     expect(stdout.trim()).toBe('hello');
     expect(stderr).toBe('');

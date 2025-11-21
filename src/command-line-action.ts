@@ -11,17 +11,18 @@ export interface CommandResult {
 export class CommandLineAction<Params = { command: string }> extends Action<Params, CommandResult> {
   constructor(
     id: string,
+    params: Params,
     private readonly commandBuilder: CommandBuilder<Params> = (params: any) => (params as any).command
   ) {
-    super(id);
+    super(id, params);
   }
 
-  describe(params: Params): string {
-    const command = this.commandBuilder(params);
+  describe(): string {
+    const command = this.commandBuilder(this.params);
     return command;
   }
 
-  async run(params: Params, ctx: ExecutionContext): Promise<CommandResult> {
+  protected async run(params: Params, ctx: ExecutionContext): Promise<CommandResult> {
     const command = this.commandBuilder(params);
     const env = { ...process.env, ...ctx.env };
     const { exec } = await import('child_process');
